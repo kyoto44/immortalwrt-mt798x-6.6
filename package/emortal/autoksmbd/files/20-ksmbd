@@ -11,14 +11,13 @@
 . /lib/functions/service.sh
 
 global=0
-config_file="/etc/config/samba4"
+config_file="/etc/config/ksmbd"
 
-[ ! -f /etc/config/samba4 ] && {
+[ ! -f /etc/config/ksmbd ] && {
 echo "
-config samba
-	option workgroup 'WORKGROUP'
-	option charset 'UTF-8'
-	option description 'Samba on OpenWRT'
+config globals
+	option 'workgroup'		'WORKGROUP'
+	option 'description'	'Ksmbd on OpenWrt'
 " > $config_file
 }
 
@@ -44,8 +43,8 @@ chk_en() {
 	[ $autoshare -eq 0 ] && exit
 }
 
-config_load samba4
-config_foreach chk_en samba4
+config_load ksmbd
+config_foreach chk_en ksmbd
 
 device=`basename $DEVPATH`
 
@@ -63,8 +62,8 @@ case "$ACTION" in
 
 	wait_for_init
 
-	[ "$(uci -q get samba4.@samba[0].autoshare)" == "1" ] && {
-		/etc/init.d/samba4 restart
+	[ "$(uci -q get ksmbd.@globals[0].autoshare)" == "1" ] && {
+		/etc/init.d/ksmbd restart
 		exit 0;
 	}
 
@@ -75,11 +74,11 @@ case "$ACTION" in
 			strr=${j#* }
 			target=${strr%% *}
 			global=0
-			config_foreach smb_handle sambashare $target
+			config_foreach smb_handle share $target
 			name=${target#*/mnt/}
 			name=$(echo $name | sed -e "s/^\///")
 			if [ $global -eq 0 ] ;then
-				echo -e "\n\nconfig sambashare" >> $config_file
+				echo -e "\n\nconfig share" >> $config_file
 				echo -e "\toption auto '1'" >> $config_file
 				echo -e "\toption name '$name'" >> $config_file
 				echo -e "\toption path '$target'" >> $config_file
@@ -89,32 +88,33 @@ case "$ACTION" in
 				echo -e "\toption dir_mask '0777'" >> $config_file
 				echo -e "\toption device '$device'" >> $config_file
 				echo -e "\toption force_root '1'" >> $config_file
-				/etc/init.d/samba4 reload
+				/etc/init.d/ksmbd reload
 				return
 			fi
 		fi
 	done
-	uci -q set samba4.@samba[0].autoshare='1'
-	uci commit samba4
+	uci -q set ksmbd.@globals[0].autoshare='1'
+	uci commit ksmbd
 	;;
 
 	remove)
 		i=0
 		while true
 		do
-			dev=`uci get samba4.@sambashare[$i].device`
+			dev=`uci get ksmbd.@share[$i].device`
 			[ $? -ne 0 ] && break
 
 			[ "$dev" = "$device" ] && {
-				auto=`uci get samba4.@sambashare[$i].auto`
+				auto=`uci get ksmbd.@share[$i].auto`
 				[ $auto = "1" ] && {
-					mount_dir=`uci get samba4.@sambashare[$i].name`
-					uci delete samba4.@sambashare[$i]
+					mount_dir=`uci get ksmbd.@share[$i].name`
+					uci delete ksmbd.@share[$i]
 					uci commit
-					/etc/init.d/samba4 reload
+					/etc/init.d/ksmbd reload
 					return
 				}
 			}
 			let i+=1
 		done
 	;;
+esac
