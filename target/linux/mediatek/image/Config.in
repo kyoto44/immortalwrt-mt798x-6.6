@@ -40,19 +40,8 @@ config MTK_FW_ENC_USE_RAMDISK
 
 endchoice
 
-choice
-	prompt "Choose firmware decryption backend"
-	default FW_ENC_DECRYPT_VIA_BL32
-
 config FW_ENC_DECRYPT_VIA_BL31
 	bool "Decrypt firmware via BL31"
-
-config FW_ENC_DECRYPT_VIA_BL32
-	bool "Decrypt firmware via BL32"
-	select PACKAGE_optee-mediatek
-	select OPTEE_FW_ENC_EARLY_TA
-
-endchoice
 
 config FW_ENC_ALG
 	string
